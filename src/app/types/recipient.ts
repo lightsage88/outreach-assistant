@@ -28,7 +28,7 @@ export interface Recipient {
     organization?: string;
 
     /**
-     * Full greeting to use for this recipeint when explicitly known.
+     * Full greeting to use for this recipient when explicitly known.
      * 
      * Examples:
      * "Dear Mr. Doyle,"

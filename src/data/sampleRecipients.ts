@@ -1,4 +1,4 @@
-import { Recipient } from "@/app/types/recipient";
+import type { Recipient } from "@/app/types/recipient";
 
 export const sampleRecipients: Recipient[] = [
     {

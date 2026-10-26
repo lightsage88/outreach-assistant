@@ -1,8 +1,7 @@
 "use client";
 import { useState } from "react";
 import { parseRecipients } from "@/lib/parseRecipients";
-import type { Recipient } from "@/lib/parseRecipients";
-import { parse } from "path";
+import type { Recipient } from "@/app/types/recipient";
 
 export default function Home() {
   const [input, setInput] = useState("");

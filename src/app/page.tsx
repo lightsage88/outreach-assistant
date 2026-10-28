@@ -41,6 +41,13 @@ export default function Home() {
   const invalidRecipientIds = new Set(validationIssues.map((issue)=> issue.recipientId));
   // The 'readyCount' gives us the number of recipients total minus the number of recipients that have a problem
   const readyCount = recipients.length - invalidRecipientIds.size;
+  const issuesByRecipient = new Map<string, string[]>();
+  for(const issue of validationIssues) {
+    const messages = issuesByRecipient.get(issue.recipientId) ?? [];
+    messages.push(issue.message);
+    
+    issuesByRecipient.set(issue.recipientId, messages);
+  }
   
   return (
     <main>
@@ -89,9 +96,51 @@ export default function Home() {
         )}
       </section>
 
-      <section>
+      {/* <section>
         <h2>Parsed Recipients ({recipients.length})</h2>
         <pre>{JSON.stringify(recipients, null, 2)}</pre>
+      </section> */}
+      <section>
+        <h2>Parsed Recipients ({recipients.length})</h2>
+        {recipients.length === 0 ? (
+          <p>No recipients parsed yet.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Organization</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recipients.map(recipient => {
+                const issues = issuesByRecipient.get(recipient.id) ?? [];
+                const fullName = [recipient.firstName, recipient.lastName].filter(Boolean).join(" ");
+                return (
+                  <tr key={recipient.id}>
+                    <td>{fullName || "-"}</td>
+                    <td>{recipient.email || "-"}</td>
+                    <td>{recipient.organization || "-"}</td>
+                    <td>
+                      {issues.length === 0 ?(<span>Ready</span>) : (
+                        <ul>
+                          {issues.map((message,index) => (
+                            <li key={index}>
+                              {message}
+                            </li>
+                          )
+                        )}
+                        </ul>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
       </section>
     </main>
   );

@@ -5,6 +5,14 @@ import { validateRecipients } from "@/lib/validateRecipients";
 
 import type { Recipient } from "@/app/types/recipient";
 
+// a TS Union Type - variables of type EditableRecipientField
+// can contain any one of those four strings, but nothing else
+type EditableRecipientField = 
+| "email"
+| "firstName"
+| "lastName"
+| "organization";
+
 export default function Home() {
   const [input, setInput] = useState("");
   const [recipients, setRecipients] = useState<Recipient[]>([]);
@@ -28,18 +36,27 @@ export default function Home() {
     }
   }
 
-  const handleEmailChange = (recipientId: string, email: string) => {
+  const handleRecipientFieldChange = (
+    recipientId: string,
+    field: EditableRecipientField,
+    value: string
+  ) => {
     // React sees that instead of passing a new array to setRecipients, we are passing a function that takes the current state and returns a new state. 
     // This is important because it ensures that we are always working with the most up-to-date state, 
     // especially in cases where multiple updates might be happening in quick succession.
     // tl;dr: Don't trip, 'currentRecipients' is a standin for 'recipients'
-    setRecipients((currentRecipients) => 
-    currentRecipients.map((recipient) =>
-     recipient.id === recipientId ? 
-    { ...recipient, email } 
-    : recipient
-    ));
-  }
+    setRecipients(currentRecipients => 
+      currentRecipients.map(recipient => 
+        recipient.id === recipientId
+        ? {
+          ...recipient,
+          [field]: value,
+        }
+        : recipient
+      )
+    );
+  };
+  
 
   // Validation of recipients is done after parsing so we can still display them in the UI
   // through the machinations that follow
@@ -128,19 +145,42 @@ export default function Home() {
             <tbody>
               {recipients.map(recipient => {
                 const issues = issuesByRecipient.get(recipient.id) ?? [];
-                const fullName = [recipient.firstName, recipient.lastName].filter(Boolean).join(" ");
+                // const fullName = [recipient.firstName, recipient.lastName].filter(Boolean).join(" ");
                 return (
                   <tr key={recipient.id}>
-                    <td>{fullName || "-"}</td>
+                    <td>
+                      <input
+                        type="text"
+                        aria-label={`First name for ${recipient.id}`}
+                        placeholder="First name"
+                        value={recipient.firstName ?? ''}
+                        onChange={event => handleRecipientFieldChange(recipient.id, "firstName", event.target.value)}
+                    />
+                    <input
+                      type="text"
+                      aria-label={`Last name for ${recipient.id}`}
+                      placeholder="Last name"
+                      value={recipient.lastName ?? ''}
+                      onChange={event => handleRecipientFieldChange(recipient.id, "lastName", event.target.value)}
+                      
+                    />
+                    </td>
                     <td>
                       <input 
                         type="email"
                         value={recipient.email}
-                        aria-label={`Email for ${fullName || recipient.id}`}
-                        onChange={((event) =>handleEmailChange(recipient.id, event.target.value))}
+                        aria-label={`Email for ${recipient.id}`}
+                        onChange={(event => handleRecipientFieldChange(recipient.id, "email", event.target.value))}
                       />
                     </td>
-                    <td>{recipient.organization || "-"}</td>
+                    <td>
+                      <input
+                        type="text"
+                        aria-label={`Organization for ${recipient.id}`}
+                        value={recipient.organization ?? ''}
+                        onChange={event => handleRecipientFieldChange(recipient.id, "organization", event.target.value)}
+                        />
+                    </td>
                     <td>
                       {issues.length === 0 ?(<span>Ready</span>) : (
                         <ul>

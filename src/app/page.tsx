@@ -11,7 +11,8 @@ type EditableRecipientField =
 | "email"
 | "firstName"
 | "lastName"
-| "organization";
+| "organization"
+| "greeting";
 
 export default function Home() {
   const [input, setInput] = useState("");
@@ -139,6 +140,7 @@ export default function Home() {
                 <th scope="col">Name</th>
                 <th scope="col">Email</th>
                 <th scope="col">Organization</th>
+                <th scope="col">Greeting</th>
                 <th scope="col">Status</th>
               </tr>
             </thead>
@@ -180,6 +182,15 @@ export default function Home() {
                         value={recipient.organization ?? ''}
                         onChange={event => handleRecipientFieldChange(recipient.id, "organization", event.target.value)}
                         />
+                    </td>
+                    <td>
+                      <input 
+                        type="text"
+                        aria-label={`Greeting for ${recipient.id}`}
+                        placeholder="Dear..."
+                        value={recipient.greeting ?? ''}
+                        onChange={event => handleRecipientFieldChange(recipient.id, "greeting", event.target.value)}
+                      />
                     </td>
                     <td>
                       {issues.length === 0 ?(<span>Ready</span>) : (

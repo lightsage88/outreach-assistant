@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { parseRecipients } from "@/lib/parseRecipients";
 import { validateRecipients } from "@/lib/validateRecipients";
+import { renderTemplate } from "@/lib/renderTemplate";
 
 import type { Recipient } from "@/app/types/recipient";
 
@@ -18,6 +19,25 @@ export default function Home() {
   const [input, setInput] = useState("");
   const [recipients, setRecipients] = useState<Recipient[]>([]);
   const [error, setError] = useState("");
+  // TODO: Placeholder subject and body templates for now
+  const [subjectTemplate, setSubjectTemplate] = useState("Introduction from {{firstName}}");
+  const [bodyTemplate, setBodyTemplate] = useState(
+    "{{greeting}}\n\nI'm reaching out regarding an opportunity with {{organization}}."
+  );
+
+  const previewRecipient = recipients[0];
+  // TODO: Make these into one function.
+  const renderedSubject = previewRecipient ?
+    renderTemplate(
+      subjectTemplate,
+      previewRecipient
+    ) : "";
+
+    const renderedBody = previewRecipient ?
+    renderTemplate(
+      bodyTemplate,
+      previewRecipient
+    ) : "";
 
   const handleParse = () => {
     try {
@@ -124,11 +144,6 @@ export default function Home() {
           </>
         )}
       </section>
-
-      {/* <section>
-        <h2>Parsed Recipients ({recipients.length})</h2>
-        <pre>{JSON.stringify(recipients, null, 2)}</pre>
-      </section> */}
       <section>
         <h2>Parsed Recipients ({recipients.length})</h2>
         {recipients.length === 0 ? (
@@ -210,6 +225,73 @@ export default function Home() {
             </tbody>
           </table>
         )}
+        <section>
+          <h2>Email Template</h2>
+          <div>
+            <label htmlFor="subject-template">Subject</label>
+            <input
+              id="subject-template"
+              type="text"
+              value={subjectTemplate}
+              onChange={event => setSubjectTemplate(event.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="body-template">
+              Message
+            </label>
+            <textarea 
+              id="body-template"
+              value={bodyTemplate}
+              onChange={event => setBodyTemplate(event.target.value)}
+              rows={10}
+              // TODO: Update this with styled-components later!
+              style={{width: "100%"}}
+            />
+          </div>
+          <p>
+            Available Variables:
+            {" "}
+            <code>{"{{greeting}}"}</code>
+            {" "}
+            <code>{"{{firstName}}"}</code>
+            {" "}
+            <code>{"{{lastName}}"}</code>
+            {" "}
+            <code>{"{{organization}}"}</code>
+            {" "}
+            <code>{"{{email}}"}</code>
+          </p>
+        </section>
+        <section>
+          <h2>Email Preview</h2>
+
+          {previewRecipient? (
+            <>
+              <p>
+                Previewing email for{" "}
+                <strong>
+                  {previewRecipient.email}
+                </strong>
+              </p>
+
+              <h3>Subject</h3>
+              <p>{renderedSubject}</p>
+
+              <h3>Message</h3>
+              <pre
+              // TODO: Use styled-components later
+                style={{whiteSpace: "pre-wrap"}}
+              >
+                {renderedBody}
+              </pre>
+            </>
+          ): (
+            <p>Import at least one recipient to preview the email.
+
+            </p>
+          )}
+        </section>
       </section>
     </main>
   );

@@ -18,6 +18,7 @@ type EditableRecipientField =
 export default function Home() {
   const [input, setInput] = useState("");
   const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [previewRecipientId, setPreviewRecipientId] = useState("");
   const [error, setError] = useState("");
   // TODO: Placeholder subject and body templates for now
   const [subjectTemplate, setSubjectTemplate] = useState("Introduction from {{firstName}}");
@@ -25,7 +26,8 @@ export default function Home() {
     "{{greeting}}\n\nI'm reaching out regarding an opportunity with {{organization}}."
   );
 
-  const previewRecipient = recipients[0];
+  // const previewRecipient = recipients[0];
+  const previewRecipient = recipients.find(recipient => recipient.id === previewRecipientId) ?? recipients[0];
   // TODO: Make these into one function.
   const renderedSubject = previewRecipient ?
     renderTemplate(
@@ -46,6 +48,7 @@ export default function Home() {
 
       // Step 2: Update our application state
       setRecipients(parsed);
+      setPreviewRecipientId(parsed[0]?.id ?? "");
       setError("");
     } catch (err) {
       // If an error is caught, we clear the recipients and validation issues
@@ -268,6 +271,32 @@ export default function Home() {
 
           {previewRecipient? (
             <>
+            <div>
+              <label htmlFor="preview-recipient">
+                Preview Recipient
+              </label>
+              <select
+              id="preview-recipient"
+              value={previewRecipient.id}
+              onChange={event => setPreviewRecipientId(event.target.value)}
+              >
+                {recipients.map(recipient => {
+                  const fullName = [
+                    recipient.firstName,
+                    recipient.lastName
+                  ].filter(Boolean).join(" ");
+
+                  return (
+                    <option
+                      key={recipient.id}
+                      value={recipient.id}
+                    >
+                      {fullName || recipient.email || recipient.id}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
               <p>
                 Previewing email for{" "}
                 <strong>

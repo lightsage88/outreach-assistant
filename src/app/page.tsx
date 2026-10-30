@@ -3,6 +3,7 @@ import { useState } from "react";
 import { parseRecipients } from "@/lib/parseRecipients";
 import { validateRecipients } from "@/lib/validateRecipients";
 import { renderTemplate } from "@/lib/renderTemplate";
+import { buildEmailDrafts } from "@/lib/buildEmailDrafts";
 
 import type { Recipient } from "@/app/types/recipient";
 
@@ -85,6 +86,18 @@ export default function Home() {
   // Validation of recipients is done after parsing so we can still display them in the UI
   // through the machinations that follow
   const validationIssues = validateRecipients(recipients);
+  const emailDrafts = buildEmailDrafts(
+    recipients,
+    subjectTemplate,
+    bodyTemplate,
+    validationIssues
+  );
+
+  const readyDraftCount = emailDrafts.filter(
+    draft => draft.isReady
+  ).length;
+
+  const blockedDraftCount = emailDrafts.length - readyDraftCount;
 
   // Count how many distinct recipients have problems
   const invalidRecipientIds = new Set(validationIssues.map((issue)=> issue.recipientId));
@@ -319,6 +332,58 @@ export default function Home() {
             <p>Import at least one recipient to preview the email.
 
             </p>
+          )}
+        </section>
+        <section>
+          <h2>Campaign Drafts</h2>
+          {emailDrafts.length === 0 ? (
+            <p>Import recipients to generate campaign drafts</p>
+          ) : (
+            <>
+              <p>
+                Ready: {readyDraftCount}
+              </p>
+              <p>
+                Needs attention: {blockedDraftCount}
+              </p>
+              {emailDrafts.map(draft => (
+                <article key={draft.recipientId}>
+                  <h3>
+                    {draft.to || "Missing email address"}
+                  </h3>
+                  <p>
+                    <strong>Status:</strong>{" "}
+                    {draft.isReady
+                      ? "Ready"
+                      : "Needs attention"
+                    }
+                  </p>
+                  {!draft.isReady && (
+                    <>
+                      <h4>Problems</h4>
+                      <ul>
+                        {draft.validationMessages.map((message, index) => (
+                          <li key={index}>
+                            {message}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  <p>
+                    <strong>Subject:</strong>{" "}
+                    {draft.subject}
+                  </p>
+                  <details>
+                    <summary>View message</summary>
+                    {/* TODO: Use styled-components to update this lookswise */}
+                    <pre style={{whiteSpace: "pre-wrap"}}>
+                      {draft.body}
+                    </pre>
+                  </details>
+                </article>
+              ))}
+            </>
           )}
         </section>
       </section>

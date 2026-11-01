@@ -27,6 +27,9 @@ export default function Home() {
   const [bodyTemplate, setBodyTemplate] = useState(
     "{{greeting}}\n\nI'm reaching out regarding an opportunity with {{organization}}."
   );
+  const [preparedDraftCount, setPreparedDraftCount] = useState<number | null>(null);
+  const [gmailPreparationError, setGmailPreparationError] = useState("");
+  const [isPreparingGmailDrafts, setIsPreparingGmailDrafts] = useState(false);
 
   // const previewRecipient = recipients[0];
   const previewRecipient = recipients.find(recipient => recipient.id === previewRecipientId) ?? recipients[0];
@@ -102,6 +105,41 @@ export default function Home() {
       )
     );
   };
+
+  const handlePrepareGmailDrafts = async () => {
+    setIsPreparingGmailDrafts(true);
+    setGmailPreparationError("");
+    setPreparedDraftCount(null);
+
+    try {
+      const response = await fetch("/api/gmail/prepare-drafts",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            drafts: emailDrafts,
+          }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error ??
+        "Unable to prepare Gmail drafts."
+        )
+      }
+
+      setPreparedDraftCount(result.count);
+
+    } catch (error) {
+      setGmailPreparationError(
+        error instanceof Error ? error.message : "Unable to prepare Gmail drafts."
+      );
+    } finally {
+      setIsPreparingGmailDrafts(false);
+    }
+  }
   
 
   // Validation of recipients is done after parsing so we can still display them in the UI
@@ -413,6 +451,25 @@ export default function Home() {
           >
             Export Ready Drafts
           </button>
+          <button
+            type="button"
+            onClick={handlePrepareGmailDrafts}
+            disabled={readyDraftCount === 0 || isPreparingGmailDrafts}
+          >
+            {isPreparingGmailDrafts ? "Preparing Gmail Drafts..." : "Prepare Gmail Drafts"}
+          </button>
+          {preparedDraftCount !== null && (
+            <p>
+              Prepared {preparedDraftCount}{" "}
+              Gmail-compatible draft
+              {preparedDraftCount === 1 ? "" : "s"}.
+            </p>
+          )}
+          {gmailPreparationError && (
+            <p role="alert">
+              {gmailPreparationError}
+            </p>
+          )}
         </section>
       </section>
     </main>

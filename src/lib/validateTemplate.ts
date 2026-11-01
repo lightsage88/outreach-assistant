@@ -6,7 +6,6 @@ const SUPPORTED_TEMPLATE_FIELDS = [
     "lastName", 
     "organization", 
     "greeting"
-    // why do this?
 ] as const;
 
 
@@ -18,14 +17,12 @@ export function validateTemplate(
     recipient: Recipient
 ): string[] {
     const messages: string[] = [];
-    // .matchAll returns an array of matching strings
     const placeholders = template.matchAll(
         /{{\s*([^{}]+?)\s*}}/g
     );
-    console.log('placeholders', placeholders);
 
     for (const match of placeholders) {
-        // Why match[1]?]
+        // Why match[1]?] --> because the data comes back as an iterator of match objects (not an array)
         const field = match[1].trim();
 
         if (

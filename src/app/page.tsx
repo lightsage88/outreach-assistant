@@ -4,6 +4,7 @@ import { parseRecipients } from "@/lib/parseRecipients";
 import { validateRecipients } from "@/lib/validateRecipients";
 import { renderTemplate } from "@/lib/renderTemplate";
 import { buildEmailDrafts } from "@/lib/buildEmailDrafts";
+import { buildEmailDraftCsv } from "@/lib/buildEmailDraftCsv";
 
 import type { Recipient } from "@/app/types/recipient";
 
@@ -41,6 +42,26 @@ export default function Home() {
       bodyTemplate,
       previewRecipient
     ) : "";
+
+  const handleDownloadReadyDrafts = () => {
+    const csv = buildEmailDraftCsv(emailDrafts);
+    // This takes your string and represents it as file-like data in browser memory
+    const blob = new Blob(
+      [csv],
+      { type: "text/csv;charset=utf-8"
+
+      }
+    );
+    // This creates a temporary URL pointing to blob
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "outreach-campaign.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
 
   const handleParse = () => {
     try {
@@ -385,6 +406,13 @@ export default function Home() {
               ))}
             </>
           )}
+          <button
+            type="button"
+            onClick={handleDownloadReadyDrafts}
+            disabled={readyDraftCount === 0}
+          >
+            Export Ready Drafts
+          </button>
         </section>
       </section>
     </main>

@@ -23,8 +23,7 @@ export function buildEmailDraftCsv(drafts: EmailDraft[]): string {
         draft.body,
     ]
     .map(escapeCsvValue)
-    .join(",")
-    ]);
+    .join(","));
 
     return [header, ...rows].join("\n");
 }

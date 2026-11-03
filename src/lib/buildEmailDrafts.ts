@@ -1,3 +1,5 @@
+import { groupBy, uniq } from "lodash";
+
 import type { EmailDraft } from "@/app/types/emailDraft";
 import type { Recipient } from "@/app/types/recipient";
 import type { RecipientValidationIssue } from "./validateRecipients";
@@ -11,8 +13,12 @@ export function buildEmailDrafts(
     bodyTemplate: string,
     validationIssues: RecipientValidationIssue[]
 ): EmailDraft[] {
+    const validationIssuesByRecipient = groupBy(
+        validationIssues,
+        issue => issue.recipientId
+    )
     return recipients.map(recipient => {
-        const recipientMessages = validationIssues.filter(issue => issue.recipientId === recipient.id)
+        const recipientMessages = (validationIssuesByRecipient[recipient.id] ?? [])
         .map(issue => issue.message);
 
         const subjectMessages = validateTemplate(subjectTemplate, recipient);
@@ -29,14 +35,12 @@ export function buildEmailDrafts(
             contentMessages.push('Email body cannot be empty');
         }
 
-        const validationMessages = [
-            ...new Set([
-                ...recipientMessages,
-                ...subjectMessages,
-                ...bodyMessages,
-                ...contentMessages
-            ]),
-        ];
+        const validationMessages = uniq([
+            ...recipientMessages,
+            ...subjectMessages,
+            ...bodyMessages,
+            ...contentMessages,
+        ]);
 
         return {
             recipientId: recipient.id,

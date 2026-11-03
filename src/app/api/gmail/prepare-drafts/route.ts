@@ -1,5 +1,6 @@
 import type { EmailDraft } from "@/app/types/emailDraft";
 import { buildGmailRawMessage } from "@/lib/buildGmailRawMessage";
+import { validateEmailDraft } from "@/lib/validateEmailDraft";
 
 // Clients can send anything as a value, we use type predicate to decalre value's
 // type within blocks this function is called within
@@ -26,6 +27,7 @@ function isEmailDraft(value: unknown): value is EmailDraft {
 export async function POST (
     request: Request
 ) {
+    // TODO: Remove eventually, this is just for debugging purposes
     console.log('POST running with request:', request);
     try {
         const body: unknown =
@@ -62,8 +64,21 @@ export async function POST (
             );
         }
 
-        const readyDrafts = drafts.filter(draft => draft.isReady);
-        const preparedDrafts = readyDrafts.map(draft => ({
+
+
+        const validatedDrafts = drafts.map(draft => ({
+            draft, 
+            validationMessages: validateEmailDraft(draft)
+        }));
+
+        const rejectedDrafts = validatedDrafts.filter(
+            ({ validationMessages }) => validationMessages.length > 0
+        );
+
+        const preparedDrafts = validatedDrafts.filter(
+            ({ validationMessages }) => validationMessages.length === 0
+        )
+        .map(({draft}) => ({
             recipientId: draft.recipientId,
             to: draft.to,
             raw: buildGmailRawMessage(draft),
@@ -71,7 +86,15 @@ export async function POST (
 
         return Response.json({
             count: preparedDrafts.length,
+            rejectedCount: rejectedDrafts.length,
             drafts: preparedDrafts,
+            rejectedDrafts: rejectedDrafts.map(({ draft, validationMessages }) => ({
+                recipientId: draft.recipientId,
+                to: draft.to,
+                validationMessages: 
+                    validationMessages.length > 0 ? validationMessages : ["Draft was marked as not ready."],
+            })
+        ),
         });
     } catch {
         return Response.json(

@@ -1,28 +1,6 @@
-import type { EmailDraft } from "@/app/types/emailDraft";
 import { buildGmailRawMessage } from "@/lib/buildGmailRawMessage";
 import { validateEmailDraft } from "@/lib/validateEmailDraft";
-
-// Clients can send anything as a value, we use type predicate to decalre value's
-// type within blocks this function is called within
-function isEmailDraft(value: unknown): value is EmailDraft {
-    if (
-        typeof value !== "object" ||
-        value === null
-    ) {
-        return false;
-    }
-
-    const draft = value as Partial<EmailDraft>;
-
-    return (
-        typeof draft.recipientId === 'string' &&
-        typeof draft.to === 'string' &&
-        typeof draft.subject === 'string' &&
-        typeof draft.body === 'string' &&
-        typeof draft.isReady === 'boolean' &&
-        Array.isArray(draft.validationMessages)
-    );
-}
+import { prepareGmailDraftsRequestSchema } from "@/lib/schemas/emailDraftSchema";
 
 export async function POST (
     request: Request
@@ -33,38 +11,21 @@ export async function POST (
         const body: unknown =
             await request.json()
 
-        if (
-            typeof body !== "object" ||
-            body === null ||
-            !("drafts" in body)
-        ) {
-            return Response.json(
-                {
-                    error: "Request must contain drafts.",
-                },
-                {
-                    status: 400,
-                }
-            );
+        const parsedRequest = prepareGmailDraftsRequestSchema.safeParse(body);
+
+        if(!parsedRequest.success) {
+            return Response.json({
+                error: "Request must contain valid email drafts.",
+                issues: parsedRequest.error.issues.map(issue => ({
+                    path: issue.path.join("."),
+                    message: issue.message,
+                })),
+            }, {
+                status: 400,
+            });
         }
 
-        const drafts = (body as { drafts: unknown }).drafts;
-
-        if (
-            !Array.isArray(drafts) ||
-            !drafts.every(isEmailDraft)
-        ) {
-            return Response.json(
-                {
-                    error: "Drafts must be valid email drafts,"
-                },
-                { 
-                    status: 400,
-                }
-            );
-        }
-
-
+        const { drafts } = parsedRequest.data;
 
         const validatedDrafts = drafts.map(draft => ({
             draft, 
@@ -91,10 +52,8 @@ export async function POST (
             rejectedDrafts: rejectedDrafts.map(({ draft, validationMessages }) => ({
                 recipientId: draft.recipientId,
                 to: draft.to,
-                validationMessages: 
-                    validationMessages.length > 0 ? validationMessages : ["Draft was marked as not ready."],
-            })
-        ),
+                validationMessages,
+            })),
         });
     } catch {
         return Response.json(

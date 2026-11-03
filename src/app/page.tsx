@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { groupBy } from "lodash";
 import { parseRecipients } from "@/lib/parseRecipients";
 import { validateRecipients } from "@/lib/validateRecipients";
 import { renderTemplate } from "@/lib/renderTemplate";
@@ -162,17 +163,7 @@ export default function Home() {
   const invalidRecipientIds = new Set(validationIssues.map((issue)=> issue.recipientId));
   // The 'readyCount' gives us the number of recipients total minus the number of recipients that have a problem
   const readyCount = recipients.length - invalidRecipientIds.size;
-  const issuesByRecipient = new Map<string, string[]>();
-
-  for (const issue of validationIssues) {
-    const existingMessages = issuesByRecipient.get(issue.recipientId);
-
-    if (existingMessages) {
-      existingMessages.push(issue.message);
-    } else {
-      issuesByRecipient.set(issue.recipientId, [issue.message]);
-    }
-  }
+  const issuesByRecipient = groupBy(validationIssues, issue => issue.recipientId);
   return (
     <main>
       <h1>Outreach Assistant</h1>
@@ -236,8 +227,7 @@ export default function Home() {
             </thead>
             <tbody>
               {recipients.map(recipient => {
-                const issues = issuesByRecipient.get(recipient.id) ?? [];
-                // const fullName = [recipient.firstName, recipient.lastName].filter(Boolean).join(" ");
+              const issues = issuesByRecipient[recipient.id] ?? [];
                 return (
                   <tr key={recipient.id}>
                     <td>
@@ -285,12 +275,11 @@ export default function Home() {
                     <td>
                       {issues.length === 0 ?(<span>Ready</span>) : (
                         <ul>
-                          {issues.map((message,index) => (
-                            <li key={index}>
-                              {message}
-                            </li>
-                          )
-                        )}
+                     {issues.map(issue => (
+                      <li key={`${issue.recipientId}-${issue.type}`}>
+                        {issue.message}
+                      </li>
+                     ))}
                         </ul>
                       )}
                     </td>

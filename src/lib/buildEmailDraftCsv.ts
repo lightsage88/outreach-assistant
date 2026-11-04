@@ -1,29 +1,25 @@
+import Papa from "papaparse";
 import type { EmailDraft } from "@/app/types/emailDraft";
 
-function escapeCsvValue(value: string): string {
-    const escapedValue = value.replaceAll('"', '""');
+export function buildEmailDraftCsv(
+    drafts: EmailDraft[]
 
-    return `"${escapedValue}"`;
-}
+): string {
+    const readyDrafts = drafts
+    .filter(draft => draft.isReady)
+    .map(draft => {
+        const { to, subject, body } = draft;
+        return {
+        to, subject, body
+    }});
 
-export function buildEmailDraftCsv(drafts: EmailDraft[]): string {
-    const readyDrafts = drafts.filter(draft => draft.isReady);
+    return Papa.unparse(readyDrafts,
 
-    const header = [
-        "to",
-        "subject",
-        "body",
-    ]
-    .map(escapeCsvValue)
-    .join(",");
-
-    const rows = readyDrafts.map(draft => [
-        draft.to,
-        draft.subject,
-        draft.body,
-    ]
-    .map(escapeCsvValue)
-    .join(","));
-
-    return [header, ...rows].join("\n");
+        {
+            columns: ["to", "subject", "body"],
+            quotes: true,
+            newline: "\n",
+            escapeFormulae: true,
+        }
+    )
 }

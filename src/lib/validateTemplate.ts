@@ -1,17 +1,5 @@
 import type { Recipient } from "@/app/types/recipient";
 
-const SUPPORTED_TEMPLATE_FIELDS = [
-    "email", 
-    "firstName", 
-    "lastName", 
-    "organization", 
-    "greeting"
-] as const;
-
-
-type TemplateField = 
-( typeof SUPPORTED_TEMPLATE_FIELDS)[number];
-
 export function validateTemplate(
     template: string,
     recipient: Recipient

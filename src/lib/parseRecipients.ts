@@ -58,22 +58,10 @@ export function parseRecipients(input: string): Recipient[] {
             id: `recipient-${String(index + 1).padStart(3, "0")}`,
             email,
             // These spread operator checks ensure we don't create empty strings for falsy values
-            ...(
-                firstName && {
-                firstName: firstName,
-            }),
-
-            ...(lastName && {
-                lastName:lastName,
-            }),
-
-            ...(organization && {
-                organization: organization,
-            }),
-
-            ...(greeting && {
-                greeting: greeting,
-            }),
+            ...(firstName && { firstName }),
+            ...(lastName && { lastName }),
+            ...(organization && { organization }),
+            ...(greeting && { greeting }),
             // This ensures that unexpected spreadsheet column values are captured and represented somehow
             ...(Object.keys(customFields).length > 0 && {
                 customFields

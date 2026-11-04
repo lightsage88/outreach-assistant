@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { saveCampaign, loadCampaign, clearCampaign } from "@/lib/schemas/campaignStorage";
 import { groupBy } from "lodash";
 import { parseRecipients } from "@/lib/parseRecipients";
 import { validateRecipients } from "@/lib/validateRecipients";
@@ -31,6 +32,40 @@ export default function Home() {
   const [preparedDraftCount, setPreparedDraftCount] = useState<number | null>(null);
   const [gmailPreparationError, setGmailPreparationError] = useState("");
   const [isPreparingGmailDrafts, setIsPreparingGmailDrafts] = useState(false);
+  const [campaignLoaded, setCampaignLoaded] = useState(false);
+  const [storageError, setStorageError] = useState("");
+
+  useEffect(() => {
+    try {
+      const saved = loadCampaign();
+      if (saved) {
+        setRecipients(saved.recipients)
+        setSubjectTemplate(saved.subjectTemplate);
+        setBodyTemplate(saved.bodyTemplate);
+        setPreviewRecipientId(saved.recipients[0]?.id ?? "");
+      }
+    } catch {
+      setStorageError("Unable to restore saved campaign.");
+    } finally {
+      setCampaignLoaded(true);
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!campaignLoaded) return;
+
+    try {
+      saveCampaign({
+        version: 1,
+        recipients,
+        subjectTemplate,
+        bodyTemplate
+      });
+      setStorageError("");
+    } catch {
+      setStorageError("Unable to save campaign locally.");
+    }
+  }, [campaignLoaded, recipients, subjectTemplate, bodyTemplate]);
 
   // const previewRecipient = recipients[0];
   const previewRecipient = recipients.find(recipient => recipient.id === previewRecipientId) ?? recipients[0];
@@ -46,6 +81,16 @@ export default function Home() {
       bodyTemplate,
       previewRecipient
     ) : "";
+
+  const handleClearCampaign = () => {
+    clearCampaign();
+    setRecipients([]);
+    setInput("");
+    setPreviewRecipientId("");
+    setSubjectTemplate("");
+    setBodyTemplate("");
+    setStorageError("");
+  }
 
   const handleDownloadReadyDrafts = () => {
     const csv = buildEmailDraftCsv(emailDrafts);
@@ -174,7 +219,14 @@ export default function Home() {
       
       <section>
         <h2>Import Recipients</h2>
-
+        <p>
+          Campaign data is saved in this browser.
+          Avoid used shared devices for private contact lists.
+        </p>
+        {storageError && <p role="alert">{storageError}</p>}
+        <button type="button" onClick={handleClearCampaign}>
+          Clear Campaign
+        </button>
         <textarea
           value={input}
           onChange={(event) => setInput(event.target.value)}

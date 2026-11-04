@@ -16,7 +16,16 @@ export function validateTemplate(
     template: string,
     recipient: Recipient
 ): string[] {
+    const { email, firstName, lastName, organization, greeting } = recipient;
     const messages: string[] = [];
+    const values: Record<string, string> = {
+        email,
+        firstName: firstName ?? "",
+        lastName: lastName ?? "",
+        organization: organization ?? "",
+        greeting: greeting ?? "",
+        ...recipient.customFields
+    };
     const placeholders = template.matchAll(
         /{{\s*([^{}]+?)\s*}}/g
     );
@@ -25,20 +34,14 @@ export function validateTemplate(
         // Why match[1]?] --> because the data comes back as an iterator of match objects (not an array)
         const field = match[1].trim();
 
-        if (
-            !SUPPORTED_TEMPLATE_FIELDS.includes(field as TemplateField)
-        ) {
+        if (!Object.prototype.hasOwnProperty.call(values, field)) {
             messages.push(
                 `Unknown template variable: {{${field}}}`
             );
-
             continue;
         }
 
-        const value = 
-           recipient[field as TemplateField];
-
-        if (!value || !value.trim()) {
+        if (!values[field].trim()) {
             messages.push(
                 `Missing value for {{${field}}}`
             );

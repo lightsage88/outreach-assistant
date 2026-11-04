@@ -71,7 +71,7 @@ export default function Home() {
     try {
       // Step 1: Convert spreadsheet text input into recipient objects
       const parsed = parseRecipients(input);
-
+      console.log('parsed recipients', parsed);
       // Step 2: Update our application state
       setRecipients(parsed);
       setPreviewRecipientId(parsed[0]?.id ?? "");
@@ -227,6 +227,7 @@ export default function Home() {
             </thead>
             <tbody>
               {recipients.map(recipient => {
+                console.log('das recipient', recipient);
               const issues = issuesByRecipient[recipient.id] ?? [];
                 return (
                   <tr key={recipient.id}>

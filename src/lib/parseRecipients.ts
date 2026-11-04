@@ -1,3 +1,4 @@
+import Papa from "papaparse"
 import type { Recipient } from "@/app/types/recipient";
 
 const knownFields = new Set([
@@ -9,34 +10,41 @@ const knownFields = new Set([
 ]);
 
 export function parseRecipients(input: string): Recipient[] {
-    const lines = input.split(/\r?\n/).filter(line => line.trim().length > 0);
+    const result = Papa.parse<string[]>(input,
+        {
+            delimiter: "\t",
+            skipEmptyLines: "greedy",
+    });
 
-    //Why are we doing this?
-    if (lines.length < 2) {
+    if (result.errors.length > 0) {
+        throw new Error(
+            `Unable to parse recipient data: ${result.errors[0].message}`
+        );
+    }
+
+    const [headerRow, ...dataRows] = result.data;
+
+    if (!headerRow || dataRows.length === 0) {
         return [];
     }
-    // 'lines' is an array of strings, where each string represents a line from the input. 
-    // (i.e. first line is expected to be the header row, and the subsequent lines are the data rows.)
-    const [headerRow, ...dataRows] = lines;
 
-    const headers = headerRow.split("\t").map(header => header.trim());
+    const headers = headerRow.map(header => header.trim());
 
     if (!headers.includes("email")) {
-        throw new Error("Recipient data must include an 'email' column.");
+        throw new Error(
+            "Recipient data must include an 'email' column."
+        );
     }
 
-    return dataRows.map((row, index) => {
-        // This line Windows and Unix-style line endings, enabling us to copy rows
-        // directly from a spreadsheet (spreadsheet cells copied to the clipboard
-        // are commonly separated by tabs).
-        const values = row.split("\t");
-
+    return dataRows.map((values, index) => {
         const rowData = Object.fromEntries(
             headers.map((header, columnIndex) => [
                 header,
                 values[columnIndex]?.trim() ?? "",
             ]),
         );
+
+        const {email, firstName, lastName, organization, greeting } = rowData;
 
         const customFields = Object.fromEntries(
             headers
@@ -48,22 +56,23 @@ export function parseRecipients(input: string): Recipient[] {
 
         return {
             id: `recipient-${String(index + 1).padStart(3, "0")}`,
-            email: rowData.email,
+            email,
             // These spread operator checks ensure we don't create empty strings for falsy values
-            ...(rowData.firstName && {
-                firstName: rowData.firstName,
+            ...(
+                firstName && {
+                firstName: firstName,
             }),
 
-            ...(rowData.lastName && {
-                lastName: rowData.lastName,
+            ...(lastName && {
+                lastName:lastName,
             }),
 
-            ...(rowData.organization && {
-                organization: rowData.organization,
+            ...(organization && {
+                organization: organization,
             }),
 
-            ...(rowData.greeting && {
-                greeting: rowData.greeting,
+            ...(greeting && {
+                greeting: greeting,
             }),
             // This ensures that unexpected spreadsheet column values are captured and represented somehow
             ...(Object.keys(customFields).length > 0 && {

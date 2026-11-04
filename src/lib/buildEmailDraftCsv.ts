@@ -13,10 +13,16 @@ export function buildEmailDraftCsv(
         to, subject, body
     }});
 
-    return Papa.unparse(readyDrafts,
-
+    return Papa.unparse(
         {
-            columns: ["to", "subject", "body"],
+            fields: ["to", "subject", "body"],
+            data: readyDrafts.map(draft => { 
+                const { to, subject, body } = draft;
+                return [
+                to, subject, body
+            ]})
+        }, 
+        {
             quotes: true,
             newline: "\n",
             escapeFormulae: true,

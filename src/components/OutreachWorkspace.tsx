@@ -1,0 +1,542 @@
+"use client";
+import { useEffect, useState } from "react";
+import { saveCampaign, loadCampaign, clearCampaign } from "@/lib/schemas/campaignStorage";
+import { groupBy } from "lodash";
+import { parseRecipients } from "@/lib/parseRecipients";
+import { validateRecipients } from "@/lib/validateRecipients";
+import { renderTemplate } from "@/lib/renderTemplate";
+import { buildEmailDrafts } from "@/lib/buildEmailDrafts";
+import { buildEmailDraftCsv } from "@/lib/buildEmailDraftCsv";
+import { demoCampaign } from "@/lib/demoCampaign";
+
+import type { Recipient } from "@/app/types/recipient";
+
+type OutreachWorkspaceProps = {
+    mode?: "demo" | "private";
+};
+
+// a TS Union Type - variables of type EditableRecipientField
+// can contain any one of those four strings, but nothing else
+type EditableRecipientField = 
+| "email"
+| "firstName"
+| "lastName"
+| "organization"
+| "greeting";
+
+export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspaceProps) {
+  const [input, setInput] = useState("");
+  const [recipients, setRecipients] = useState<Recipient[]>([]);
+  const [previewRecipientId, setPreviewRecipientId] = useState("");
+  const [error, setError] = useState("");
+  // TODO: Placeholder subject and body templates for now
+  const [subjectTemplate, setSubjectTemplate] = useState("Introduction from {{firstName}}");
+  const [bodyTemplate, setBodyTemplate] = useState(
+    "{{greeting}}\n\nI'm reaching out regarding an opportunity with {{organization}}."
+  );
+  const [preparedDraftCount, setPreparedDraftCount] = useState<number | null>(null);
+  const [gmailPreparationError, setGmailPreparationError] = useState("");
+  const [isPreparingGmailDrafts, setIsPreparingGmailDrafts] = useState(false);
+  const [campaignLoaded, setCampaignLoaded] = useState(false);
+  const [storageError, setStorageError] = useState("");
+
+  useEffect(() => {
+    if (mode === "demo") {
+        setRecipients(demoCampaign.recipients);
+        setSubjectTemplate(demoCampaign.subjectTemplate);
+        setBodyTemplate(demoCampaign.bodyTemplate);
+        setPreviewRecipientId(demoCampaign.recipients[0]?.id ?? "");
+        setCampaignLoaded(true);
+        return;
+    }
+    try {
+      const saved = loadCampaign();
+      if (saved) {
+        setRecipients(saved.recipients)
+        setSubjectTemplate(saved.subjectTemplate);
+        setBodyTemplate(saved.bodyTemplate);
+        setPreviewRecipientId(saved.recipients[0]?.id ?? "");
+      }
+    } catch {
+      setStorageError("Unable to restore saved campaign.");
+    } finally {
+      setCampaignLoaded(true);
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!campaignLoaded || mode === "demo") return;
+
+    try {
+      saveCampaign({
+        version: 1,
+        recipients,
+        subjectTemplate,
+        bodyTemplate
+      });
+      setStorageError("");
+    } catch {
+      setStorageError("Unable to save campaign locally.");
+    }
+  }, [campaignLoaded, recipients, subjectTemplate, bodyTemplate]);
+
+  // const previewRecipient = recipients[0];
+  const previewRecipient = recipients.find(recipient => recipient.id === previewRecipientId) ?? recipients[0];
+  // TODO: Make these into one function.
+  const renderedSubject = previewRecipient ?
+    renderTemplate(
+      subjectTemplate,
+      previewRecipient
+    ) : "";
+
+    const renderedBody = previewRecipient ?
+    renderTemplate(
+      bodyTemplate,
+      previewRecipient
+    ) : "";
+
+  const handleClearCampaign = () => {
+    clearCampaign();
+    setRecipients([]);
+    setInput("");
+    setPreviewRecipientId("");
+    setSubjectTemplate("");
+    setBodyTemplate("");
+    setStorageError("");
+  }
+
+  const handleDownloadReadyDrafts = () => {
+    const csv = buildEmailDraftCsv(emailDrafts);
+    // This takes your string and represents it as file-like data in browser memory
+    const blob = new Blob(
+      [csv],
+      { type: "text/csv;charset=utf-8"
+
+      }
+    );
+    // This creates a temporary URL pointing to blob
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "outreach-campaign.csv";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  const handleParse = () => {
+    try {
+      // Step 1: Convert spreadsheet text input into recipient objects
+      const parsed = parseRecipients(input);
+      console.log('parsed recipients', parsed);
+      // Step 2: Update our application state
+      setRecipients(parsed);
+      setPreviewRecipientId(parsed[0]?.id ?? "");
+      setError("");
+    } catch (err) {
+      // If an error is caught, we clear the recipients and validation issues
+      setRecipients([]);
+      // and then we set an error message
+      setError(
+        err instanceof Error ? err.message : "Something went wrong while parsing."
+      )
+    }
+  }
+
+  const handleRecipientFieldChange = (
+    recipientId: string,
+    field: EditableRecipientField,
+    value: string
+  ) => {
+    // React sees that instead of passing a new array to setRecipients, we are passing a function that takes the current state and returns a new state. 
+    // This is important because it ensures that we are always working with the most up-to-date state, 
+    // especially in cases where multiple updates might be happening in quick succession.
+    // tl;dr: Don't trip, 'currentRecipients' is a standin for 'recipients'
+    setRecipients(currentRecipients => 
+      currentRecipients.map(recipient => 
+        recipient.id === recipientId
+        ? {
+          ...recipient,
+          [field]: value,
+        }
+        : recipient
+      )
+    );
+  };
+
+  const handlePrepareGmailDrafts = async () => {
+    setIsPreparingGmailDrafts(true);
+    setGmailPreparationError("");
+    setPreparedDraftCount(null);
+
+    try {
+      const response = await fetch("/api/gmail/prepare-drafts",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            drafts: emailDrafts,
+          }),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error ??
+        "Unable to prepare Gmail drafts."
+        )
+      }
+
+      setPreparedDraftCount(result.count);
+
+    } catch (error) {
+      setGmailPreparationError(
+        error instanceof Error ? error.message : "Unable to prepare Gmail drafts."
+      );
+    } finally {
+      setIsPreparingGmailDrafts(false);
+    }
+  }
+  
+
+  // Validation of recipients is done after parsing so we can still display them in the UI
+  // through the machinations that follow
+  const validationIssues = validateRecipients(recipients);
+  const emailDrafts = buildEmailDrafts(
+    recipients,
+    subjectTemplate,
+    bodyTemplate,
+    validationIssues
+  );
+
+  const readyDraftCount = emailDrafts.filter(
+    draft => draft.isReady
+  ).length;
+
+  const blockedDraftCount = emailDrafts.length - readyDraftCount;
+
+  // Count how many distinct recipients have problems
+  const invalidRecipientIds = new Set(validationIssues.map((issue)=> issue.recipientId));
+  // The 'readyCount' gives us the number of recipients total minus the number of recipients that have a problem
+  const readyCount = recipients.length - invalidRecipientIds.size;
+  const issuesByRecipient = groupBy(validationIssues, issue => issue.recipientId);
+  return (
+    <main>
+        {mode === "demo" && (
+            <p>
+                Interactive Demo — Fictional contacts.
+                Changes are not saved, and no emails are sent.
+            </p>
+        )}
+      <h1>Outreach Assistant</h1>
+
+      <p>
+        Paste recipient data from a spreadsheet to preview and validate imported contacts.
+      </p>
+      
+      <section>
+        <h2>Import Recipients</h2>
+        <p>
+          Campaign data is saved in this browser.
+          Avoid used shared devices for private contact lists.
+        </p>
+        {storageError && <p role="alert">{storageError}</p>}
+        {mode === "private" && (
+        <button type="button" onClick={handleClearCampaign}>
+          Clear Campaign
+        </button>
+        )}
+        <textarea
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          placeholder="Paste spreadsheet rows here..."
+          rows={8}
+          // TODO: Make more bespoke styling useing styled-components later!
+          style={{width: "100%" }}
+        />
+        <button type="button" onClick={handleParse}>
+          Parse Recipients
+        </button>
+
+      </section>
+      {error && (
+        <p role="alert">{error}</p>
+      )}
+      <section aria-live="polite">
+        <h2>Import Summary</h2>
+        <p>Total recipients: {recipients.length}</p>
+        <p>Recipients ready: {readyCount}</p>
+        <p>Validation issues: {validationIssues.length}</p>
+        {validationIssues.length > 0 && (
+          <>
+            <h3>Issues Found</h3>
+            <ul>
+              {validationIssues.map((issue) => (
+                <li key={`${issue.recipientId}-${issue.type}`}>
+                  <strong>{issue.recipientId}:</strong>{" "}
+                  {issue.message}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+      <section>
+        <h2>Parsed Recipients ({recipients.length})</h2>
+        {recipients.length === 0 ? (
+          <p>No recipients parsed yet.</p>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Name</th>
+                <th scope="col">Email</th>
+                <th scope="col">Organization</th>
+                <th scope="col">Greeting</th>
+                <th scope="col">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {recipients.map(recipient => {
+                console.log('das recipient', recipient);
+              const issues = issuesByRecipient[recipient.id] ?? [];
+                return (
+                  <tr key={recipient.id}>
+                    <td>
+                      <input
+                        type="text"
+                        aria-label={`First name for ${recipient.id}`}
+                        placeholder="First name"
+                        value={recipient.firstName ?? ''}
+                        onChange={event => handleRecipientFieldChange(recipient.id, "firstName", event.target.value)}
+                    />
+                    <input
+                      type="text"
+                      aria-label={`Last name for ${recipient.id}`}
+                      placeholder="Last name"
+                      value={recipient.lastName ?? ''}
+                      onChange={event => handleRecipientFieldChange(recipient.id, "lastName", event.target.value)}
+                      
+                    />
+                    </td>
+                    <td>
+                      <input 
+                        type="email"
+                        value={recipient.email}
+                        aria-label={`Email for ${recipient.id}`}
+                        onChange={(event => handleRecipientFieldChange(recipient.id, "email", event.target.value))}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="text"
+                        aria-label={`Organization for ${recipient.id}`}
+                        value={recipient.organization ?? ''}
+                        onChange={event => handleRecipientFieldChange(recipient.id, "organization", event.target.value)}
+                        />
+                    </td>
+                    <td>
+                      <input 
+                        type="text"
+                        aria-label={`Greeting for ${recipient.id}`}
+                        placeholder="Dear..."
+                        value={recipient.greeting ?? ''}
+                        onChange={event => handleRecipientFieldChange(recipient.id, "greeting", event.target.value)}
+                      />
+                    </td>
+                    <td>
+                      {issues.length === 0 ?(<span>Ready</span>) : (
+                        <ul>
+                     {issues.map(issue => (
+                      <li key={`${issue.recipientId}-${issue.type}`}>
+                        {issue.message}
+                      </li>
+                     ))}
+                        </ul>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )}
+        <section>
+          <h2>Email Template</h2>
+          <div>
+            <label htmlFor="subject-template">Subject</label>
+            <input
+              id="subject-template"
+              type="text"
+              value={subjectTemplate}
+              onChange={event => setSubjectTemplate(event.target.value)}
+            />
+          </div>
+          <div>
+            <label htmlFor="body-template">
+              Message
+            </label>
+            <textarea 
+              id="body-template"
+              value={bodyTemplate}
+              onChange={event => setBodyTemplate(event.target.value)}
+              rows={10}
+              // TODO: Update this with styled-components later!
+              style={{width: "100%"}}
+            />
+          </div>
+          <p>
+            Available Variables:
+            {" "}
+            <code>{"{{greeting}}"}</code>
+            {" "}
+            <code>{"{{firstName}}"}</code>
+            {" "}
+            <code>{"{{lastName}}"}</code>
+            {" "}
+            <code>{"{{organization}}"}</code>
+            {" "}
+            <code>{"{{email}}"}</code>
+          </p>
+        </section>
+        <section>
+          <h2>Email Preview</h2>
+
+          {previewRecipient? (
+            <>
+            <div>
+              <label htmlFor="preview-recipient">
+                Preview Recipient
+              </label>
+              <select
+              id="preview-recipient"
+              value={previewRecipient.id}
+              onChange={event => setPreviewRecipientId(event.target.value)}
+              >
+                {recipients.map(recipient => {
+                  const fullName = [
+                    recipient.firstName,
+                    recipient.lastName
+                  ].filter(Boolean).join(" ");
+
+                  return (
+                    <option
+                      key={recipient.id}
+                      value={recipient.id}
+                    >
+                      {fullName || recipient.email || recipient.id}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+              <p>
+                Previewing email for{" "}
+                <strong>
+                  {previewRecipient.email}
+                </strong>
+              </p>
+
+              <h3>Subject</h3>
+              <p>{renderedSubject}</p>
+
+              <h3>Message</h3>
+              <pre
+              // TODO: Use styled-components later
+                style={{whiteSpace: "pre-wrap"}}
+              >
+                {renderedBody}
+              </pre>
+            </>
+          ): (
+            <p>Import at least one recipient to preview the email.
+
+            </p>
+          )}
+        </section>
+        <section>
+          <h2>Campaign Drafts</h2>
+          {emailDrafts.length === 0 ? (
+            <p>Import recipients to generate campaign drafts</p>
+          ) : (
+            <>
+              <p>
+                Ready: {readyDraftCount}
+              </p>
+              <p>
+                Needs attention: {blockedDraftCount}
+              </p>
+              {emailDrafts.map(draft => (
+                <article key={draft.recipientId}>
+                  <h3>
+                    {draft.to || "Missing email address"}
+                  </h3>
+                  <p>
+                    <strong>Status:</strong>{" "}
+                    {draft.isReady
+                      ? "Ready"
+                      : "Needs attention"
+                    }
+                  </p>
+                  {!draft.isReady && (
+                    <>
+                      <h4>Problems</h4>
+                      <ul>
+                        {draft.validationMessages.map((message, index) => (
+                          <li key={index}>
+                            {message}
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  <p>
+                    <strong>Subject:</strong>{" "}
+                    {draft.subject}
+                  </p>
+                  <details>
+                    <summary>View message</summary>
+                    {/* TODO: Use styled-components to update this lookswise */}
+                    <pre style={{whiteSpace: "pre-wrap"}}>
+                      {draft.body}
+                    </pre>
+                  </details>
+                </article>
+              ))}
+            </>
+          )}
+          <button
+            type="button"
+            onClick={handleDownloadReadyDrafts}
+            disabled={readyDraftCount === 0}
+          >
+            Export Ready Drafts
+          </button>
+          {mode === "private" && (
+          <button
+            type="button"
+            onClick={handlePrepareGmailDrafts}
+            disabled={readyDraftCount === 0 || isPreparingGmailDrafts}
+          >
+            {isPreparingGmailDrafts ? "Preparing Gmail Drafts..." : "Prepare Gmail Drafts"}
+          </button>
+          )}
+          {preparedDraftCount !== null && (
+            <p>
+              Prepared {preparedDraftCount}{" "}
+              Gmail-compatible draft
+              {preparedDraftCount === 1 ? "" : "s"}.
+            </p>
+          )}
+          {gmailPreparationError && mode === "private" && (
+            <p role="alert">
+              {gmailPreparationError}
+            </p>
+          )}
+        </section>
+      </section>
+    </main>
+  );
+}

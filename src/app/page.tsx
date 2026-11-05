@@ -21,7 +21,7 @@ export default function Home() {
         <p className={styles.eyebrow}>A Next.js + TypeScript project</p>
         <h1>Personalized outreach without the busywork.</h1>
         <p className={styles.description}>
-          Turn spreadsheet contacts into personalized email drafts with dynamic templates, custom fields, validator, and previews.
+          Turn spreadsheet contacts into personalized email drafts with dynamic templates, custom fields, validation, and previews.
         </p>
         <div className={styles.actions}>
           <Link href="/demo" className={styles.primary}>

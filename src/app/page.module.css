@@ -1,150 +1,114 @@
-.page {
-  --background: #fafafa;
-  --foreground: #fff;
-
-  --text-primary: #000;
-  --text-secondary: #666;
-
-  --button-primary-hover: #383838;
-  --button-secondary-hover: #f2f2f2;
-  --button-secondary-border: #ebebeb;
-
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-geist-sans);
-  background-color: var(--background);
-}
 
 .main {
-  display: flex;
-  flex: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 24px;
   width: 100%;
-  max-width: 800px;
-  flex-direction: column;
-  align-items: flex-start;
+}
+
+.header {
+  display: flex;
   justify-content: space-between;
-  background-color: var(--foreground);
-  padding: 120px 60px;
-}
-
-.intro {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-align: left;
-  gap: 24px;
-}
-
-.intro h1 {
-  max-width: 320px;
-  font-size: 40px;
-  font-weight: 600;
-  line-height: 48px;
-  letter-spacing: -2.4px;
-  text-wrap: balance;
-  color: var(--text-primary);
-}
-
-.intro p {
-  max-width: 440px;
-  font-size: 18px;
-  line-height: 32px;
-  text-wrap: balance;
-  color: var(--text-secondary);
-}
-
-.intro a {
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.ctas {
-  display: flex;
-  flex-direction: row;
-  width: 100%;
-  max-width: 440px;
-  gap: 16px;
-  font-size: 14px;
-}
-
-.ctas a {
-  display: flex;
-  justify-content: center;
   align-items: center;
-  height: 40px;
-  padding: 0 16px;
-  border-radius: 128px;
-  border: 1px solid transparent;
-  transition: 0.2s;
-  cursor: pointer;
-  width: fit-content;
-  font-weight: 500;
 }
 
-a.primary {
-  background: var(--text-primary);
-  color: var(--background);
-  gap: 8px;
+.brand {
+  font-size: 18px;
+  font-weight: 700;
 }
 
-a.secondary {
-  border-color: var(--button-secondary-border);
+.hero {
+  padding: 110px 0 90px;
+  max-width: 780px;
+  color: red;
+  background: orange;
 }
 
-/* Enable hover only on non-touch devices */
-@media (hover: hover) and (pointer: fine) {
-  a.primary:hover {
-    background: var(--button-primary-hover);
-    border-color: transparent;
-  }
-
-  a.secondary:hover {
-    background: var(--button-secondary-hover);
-    border-color: transparent;
-  }
+.eyebrow {
+  color: #7c83e8;
+  font-weight: 600;
+  margin-bottom: 20px;
 }
 
-@media (max-width: 600px) {
-  .main {
-    padding: 48px 24px;
-  }
-
-  .intro {
-    gap: 16px;
-  }
-
-  .intro h1 {
-    font-size: 32px;
-    line-height: 40px;
-    letter-spacing: -1.92px;
-  }
+.hero h1 {
+  font-size: clamp(40px, 6vw, 76px);
+  line-height: 1.08;
+  letter-spacing: -0.045em;
 }
 
-@media (prefers-color-scheme: dark) {
-  .logo {
-    filter: invert();
-  }
-
-  .page {
-    --background: #000;
-    --foreground: #000;
-
-    --text-primary: #ededed;
-    --text-secondary: #999;
-
-    --button-primary-hover: #ccc;
-    --button-secondary-hover: #1a1a1a;
-    --button-secondary-border: #1a1a1a;
-  }
+.description {
+  margin-top: 28px;
+  font-size: 19px;
+  line-height: 1.7;
+  opacity: 0.75;
 }
 
-.code {
-  font-family: var(--font-geist-mono);
-  font-size: 0.9em;
-  background: color-mix(in srgb, currentColor 8%, transparent);
-  padding: 0.1em 0.4em;
-  border-radius: 6px;
+.actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 36px;
+}
+
+.primary,
+.secondary {
+  padding: 14px 22px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.primary {
+  background: #6366f1;
+  color: white;
+}
+
+.secondary {
+  border: 1px solid #8885;
+}
+
+.features {
+  padding: 40px 0 80px;
+}
+
+.features h2 {
+  font-size: 28px;
+  margin-bottom: 28px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.grid article {
+  padding: 26px;
+  border: 1px solid #8884;
+  border-radius: 14px;
+}
+
+.grid h3 {
+  margin-bottom: 12px;
+}
+
+.grid p {
+  line-height: 1.6;
+  opacity: 0.75;
+}
+
+.footer {
+  border-top: 1px solid #8884;
+  padding: 28px 0;
+  font-size: 14px;
+  opacity: 0.65;
+}
+
+@media (max-width: 650px) {
+  .hero {
+    padding: 70px 0;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }

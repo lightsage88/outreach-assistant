@@ -5,8 +5,6 @@ import { prepareGmailDraftsRequestSchema } from "@/lib/schemas/emailDraftSchema"
 export async function POST (
     request: Request
 ) {
-    // TODO: Remove eventually, this is just for debugging purposes
-    console.log('POST running with request:', request);
     try {
         const body: unknown =
             await request.json()

@@ -42,6 +42,7 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
 
   useEffect(() => {
     if (mode === "demo") {
+        //TODO: Calling setState synchronously can cause cascading renders that can hurt performance.
         setRecipients(demoCampaign.recipients);
         setSubjectTemplate(demoCampaign.subjectTemplate);
         setBodyTemplate(demoCampaign.bodyTemplate);
@@ -74,11 +75,12 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
         subjectTemplate,
         bodyTemplate
       });
+      //TODO: Calling setState synchronously can cause cascading renders that can hurt performance.
       setStorageError("");
     } catch {
       setStorageError("Unable to save campaign locally.");
     }
-  }, [campaignLoaded, recipients, subjectTemplate, bodyTemplate]);
+  }, [campaignLoaded, recipients, subjectTemplate, bodyTemplate, mode]);
 
   // const previewRecipient = recipients[0];
   const previewRecipient = recipients.find(recipient => recipient.id === previewRecipientId) ?? recipients[0];
@@ -129,7 +131,6 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
     try {
       // Step 1: Convert spreadsheet text input into recipient objects
       const parsed = parseRecipients(input);
-      console.log('parsed recipients', parsed);
       // Step 2: Update our application state
       setRecipients(parsed);
       setPreviewRecipientId(parsed[0]?.id ?? "");
@@ -224,25 +225,30 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
   const issuesByRecipient = groupBy(validationIssues, issue => issue.recipientId);
   return (
     <main>
-        {mode === "demo" && (
-            <p>
+        {mode === "demo" && 
+            (<p>
                 Interactive Demo — Fictional contacts.
                 Changes are not saved, and no emails are sent.
-            </p>
-        )}
+            </p>)
+        }
       <h1>Outreach Assistant</h1>
-
       <p>
         Paste recipient data from a spreadsheet to preview and validate imported contacts.
       </p>
-      
       <section>
         <h2>Import Recipients</h2>
-        <p>
-          Campaign data is saved in this browser.
-          Avoid used shared devices for private contact lists.
-        </p>
-        {storageError && <p role="alert">{storageError}</p>}
+        {mode === "private" && (
+        <>
+            <p>
+                Campaign data is saved in this browser.
+                Avoid using shared devices for private contact lists.
+            </p>
+
+            {storageError && (
+                <p role="alert">{storageError}</p>
+            )}
+        </>
+        )}
         {mode === "private" && (
         <button type="button" onClick={handleClearCampaign}>
           Clear Campaign
@@ -300,7 +306,6 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
             </thead>
             <tbody>
               {recipients.map(recipient => {
-                console.log('das recipient', recipient);
               const issues = issuesByRecipient[recipient.id] ?? [];
                 return (
                   <tr key={recipient.id}>

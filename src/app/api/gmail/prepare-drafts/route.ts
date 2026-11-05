@@ -5,6 +5,17 @@ import { prepareGmailDraftsRequestSchema } from "@/lib/schemas/emailDraftSchema"
 export async function POST (
     request: Request
 ) {
+    if (process.env.NODE_ENV === "production") {
+        return Response.json(
+            {
+                error: "Gmail draft preparation is unavailable in the public demo.",
+            },
+            {
+                status: 403,
+            }
+        );
+    }
+
     try {
         const body: unknown =
             await request.json()

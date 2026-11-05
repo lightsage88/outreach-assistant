@@ -14,7 +14,7 @@ export function loadCampaign(): Campaign | null {
 
     if (!saved) {
         return null;
-    }j
+    }
 
     const parsed: unknown = JSON.parse(saved);
 

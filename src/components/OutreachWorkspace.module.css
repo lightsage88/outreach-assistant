@@ -1,0 +1,61 @@
+.workspace {
+  width: min(100% - 32px, 1100px);
+  margin: 0 auto;
+  padding: 40px 0 80px;
+}
+
+.workspace h1 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  margin-bottom: 12px;
+}
+
+.workspace section {
+  margin-top: 28px;
+  padding: 24px;
+  border: 1px solid #8884;
+  border-radius: 14px;
+}
+
+.workspace h2 {
+  margin-bottom: 16px;
+}
+
+.workspace input,
+.workspace textarea,
+.workspace select {
+  max-width: 100%;
+  font: inherit;
+}
+
+.workspace textarea {
+  width: 100%;
+}
+
+.tableScroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.tableScroll table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.tableScroll th,
+.tableScroll td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #8884;
+}
+
+@media (max-width: 600px) {
+  .workspace {
+    width: min(100% - 24px, 1100px);
+    padding-top: 24px;
+  }
+
+  .workspace section {
+    padding: 16px;
+  }
+}

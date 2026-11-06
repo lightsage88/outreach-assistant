@@ -8,6 +8,7 @@ import { renderTemplate } from "@/lib/renderTemplate";
 import { buildEmailDrafts } from "@/lib/buildEmailDrafts";
 import { buildEmailDraftCsv } from "@/lib/buildEmailDraftCsv";
 import { demoCampaign } from "@/lib/demoCampaign";
+import styles from "./OutreachWorkspace.module.css";
 
 import type { Recipient } from "@/app/types/recipient";
 
@@ -224,7 +225,7 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
   const readyCount = recipients.length - invalidRecipientIds.size;
   const issuesByRecipient = groupBy(validationIssues, issue => issue.recipientId);
   return (
-    <main>
+    <main className={styles.workspace}>
         {mode === "demo" && 
             (<p>
                 Interactive Demo — Fictional contacts.
@@ -294,6 +295,7 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
         {recipients.length === 0 ? (
           <p>No recipients parsed yet.</p>
         ) : (
+          <div className={styles.tableScroll}>
           <table>
             <thead>
               <tr>
@@ -367,6 +369,7 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
               })}
             </tbody>
           </table>
+          </div>
         )}
         <section>
           <h2>Email Template</h2>

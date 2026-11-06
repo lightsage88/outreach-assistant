@@ -116,12 +116,13 @@ Planned improvements include:
 - Automated tests for campaign-processing utilities
 - Authenticated access to private campaign functionality
 - Gmail integration for creating actual drafts
+- AI feature to ensure that who I'm addressing is still with the company, alive, etc.
 
 These features are planned and are not part of the current public demo.
 
 ## Project Status
 
-Active development. The public demo is available as a portfolio preview while additional functionality is being built.
+Active development. The public demo is available as a portfolio preview while additional functionality & styling are being built.
 
 ## Author
 

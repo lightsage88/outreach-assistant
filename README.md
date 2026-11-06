@@ -1,36 +1,132 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+# Outreach Assistant
+
+A personalized email campaign builder built with Next.js, React, and TypeScript.
+
+[**Live Application**](https://luminous-tulumba-6edb1a.netlify.app/) · [**Interactive Demo**](https://luminous-tulumba-6edb1a.netlify.app/demo)
+
+## Overview
+
+Outreach Assistant helps turn spreadsheet contact lists into personalized email drafts.
+
+The application supports importing recipient data, validating contact information, customizing message templates, previewing individualized drafts, and exporting campaign data.
+
+I started this project to streamline professional outreach for work as an actor and opera singer while exploring practical application architecture, data validation, and modern React development. tl;dr: I didn't want to copy and paste an email to every conductor, director, and general manager on the planet while making small changes to who I was addressing. lol
+
+## Features
+
+- **Spreadsheet imports:** Paste tab-separated contact data, including custom columns.
+- **Editable recipients:** Review and correct imported contact information.
+- **Template personalization:** Insert recipient-specific values using placeholders such as `{{firstName}}` and `{{organization}}`.
+- **Validation:** Identify incomplete recipient records and drafts that aren't ready.
+- **Live previews:** Review personalized messages before exporting.
+- **CSV export:** Download ready-to-use campaign data.
+- **Local persistence:** Save private campaign data in browser storage during local development.
+- **Public demo:** Explore the application using fictional contacts without saving changes.
+
+The application currently prepares Gmail-compatible message data during local development. It does not authenticate with Gmail, create drafts in a Gmail account, or send emails.
+
+## Technology Stack
+
+| Technology | Purpose |
+| --- | --- |
+| Next.js | App Router, routing, and server endpoints |
+| React | Interactive campaign workspace |
+| TypeScript | Typed application data and components |
+| Zod | Request validation |
+| Papa Parse | Spreadsheet data parsing |
+| Lodash | Data transformation utilities |
+| Netlify | Deployment and hosting |
+
+## Architecture
+
+The application separates campaign processing from the user interface.
+
+- `src/components/OutreachWorkspace.tsx` — Interactive campaign editor and preview.
+- `src/lib/` — Parsing, validation, template rendering, draft generation, CSV export, and persistence utilities.
+- `src/app/types/` — Shared TypeScript data models.
+- `src/app/demo/` — Public demonstration using fictional campaign data.
+- `src/app/workspace/` — Development-only private workspace.
+- `src/app/api/gmail/prepare-drafts/` — Development-only endpoint for preparing Gmail-compatible message data.
+
+The public demo and private workspace reuse the same workspace component with different modes.
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js compatible with Next.js 16
+- npm
+
+### Installation
+
+Clone the repository:
+
+```bash
+git clone https://github.com/lightsage88/outreach-assistant.git
+cd outreach-assistant
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Available routes:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `/` — Portfolio landing page
+- `/demo` — Interactive public demo
+- `/workspace` — Private-mode workspace, available during development
 
-## Learn More
+## Development Checks
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deployment and Privacy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+The public application is hosted on Netlify.
 
-## Deploy on Vercel
+The production deployment restricts access to the private workspace and the Gmail preparation API. The workspace returns a 404 response, while the API rejects POST requests with HTTP 403.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The interactive demo uses fictional contacts. Demo edits are not persisted, and no emails are sent.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Private campaign persistence uses browser localStorage during development. It is not a substitute for encrypted storage or authenticated multi-user access.
+
+## Roadmap
+
+Planned improvements include:
+
+- Rich HTML email composition
+- Clickable, labeled media links
+- PDF resume and headshot attachments
+- Improved responsive workspace styling
+- Automated tests for campaign-processing utilities
+- Authenticated access to private campaign functionality
+- Gmail integration for creating actual drafts
+
+These features are planned and are not part of the current public demo.
+
+## Project Status
+
+Active development. The public demo is available as a portfolio preview while additional functionality is being built.
+
+## Author
+
+Adrian Rosales
+
+[GitHub](https://github.com/lightsage88)
+[Portfolio](https://adrian-rosales.tech)
+[Arts Site](https://adrian-rosales.art)

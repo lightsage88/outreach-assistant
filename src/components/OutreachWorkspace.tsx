@@ -98,6 +98,28 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
       previewRecipient
     ) : "";
 
+  const handleResetDemo = () => {
+    if (mode !== "demo") return;
+
+    setRecipients(
+      demoCampaign.recipients.map(recipient => ({
+        ...recipient,
+        customFields: recipient.customFields
+        ? {...recipient.customFields}
+        : undefined,
+      }))
+    );
+
+    setSubjectTemplate(demoCampaign.subjectTemplate);
+    setBodyTemplate(demoCampaign.bodyTemplate);
+    setPreviewRecipientId(demoCampaign.recipients[0]?.id ?? "");
+
+    setInput("");
+    setError("");
+    setPreparedDraftCount(null);
+    setGmailPreparationError("");
+  }
+
   const handleClearCampaign = () => {
     clearCampaign();
     setRecipients([]);
@@ -226,12 +248,17 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
   const issuesByRecipient = groupBy(validationIssues, issue => issue.recipientId);
   return (
     <main className={styles.workspace}>
-        {mode === "demo" && 
-            (<p>
-                Interactive Demo — Fictional contacts.
-                Changes are not saved, and no emails are sent.
-            </p>)
-        }
+      {mode === "demo" && (
+        <div>
+          <p>
+            Interactive Demo - Fictional contacts.
+            Changes are not saved, and no emails are sent.
+          </p>
+          <button type="button" onClick={handleResetDemo}>
+            Reset Demo
+          </button>
+        </div>
+      )}
       <h1>Outreach Assistant</h1>
       <p>
         Paste recipient data from a spreadsheet to preview and validate imported contacts.

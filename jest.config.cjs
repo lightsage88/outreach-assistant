@@ -3,7 +3,7 @@
 const config = {
   preset: "ts-jest",
   testEnvironment: "node",
-  testMatch: ["**/*.test.ts"],
+  testMatch: ["**/*.test.ts", "**/*.test.tsx"],
   clearMocks: true,
   moduleNameMapper: {
   "^@/(.*)$": "<rootDir>/src/$1",

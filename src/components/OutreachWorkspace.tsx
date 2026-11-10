@@ -64,7 +64,7 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
     } finally {
       setCampaignLoaded(true);
     }
-  }, [])
+  }, [mode])
 
   useEffect(() => {
     if (!campaignLoaded || mode === "demo") return;

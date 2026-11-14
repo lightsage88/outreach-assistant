@@ -45,14 +45,16 @@ export async function POST (
             ({ validationMessages }) => validationMessages.length > 0
         );
 
-        const preparedDrafts = validatedDrafts.filter(
-            ({ validationMessages }) => validationMessages.length === 0
-        )
-        .map(({draft}) => ({
-            recipientId: draft.recipientId,
-            to: draft.to,
-            raw: buildGmailRawMessage(draft),
-        }));
+        const preparedDrafts = await Promise.all(
+            validatedDrafts.filter(
+                ({ validationMessages }) => validationMessages.length === 0
+            )
+            .map(async ({draft}) => ({
+                recipientId: draft.recipientId,
+                to: draft.to,
+                raw: await buildGmailRawMessage(draft),
+            }))
+        );
 
         return Response.json({
             count: preparedDrafts.length,

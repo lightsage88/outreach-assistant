@@ -1,39 +1,19 @@
+import MailComposer from "nodemailer/lib/mail-composer";
 import type { EmailDraft } from "@/app/types/emailDraft";
+import { renderEmailHtml } from "@/lib/renderHtmlEmail";
 
-function sanitizeHeaderValue(value: string): string {
-    return value
-    // removes line breaks from entering email headers
-    .replace(/[\r\n]+/g, " ")
-    .trim();
-}
+export async function buildGmailRawMessage(draft: EmailDraft): Promise<string> {
+    const {to, subject, body} = draft;
+    const composer = new MailComposer({
+        to,
+        subject,
+        text: body,
+        html: renderEmailHtml(body),
+        disableFileAccess: true,
+        disableUrlAccess: true
+    });
 
-function encodeSubject(subject: string): string {
-    const sanitizedSubject = sanitizeHeaderValue(subject);
+    const message = await composer.compile.build();
 
-    const encodedSubject = Buffer
-    .from(sanitizedSubject, "utf-8")
-    .toString("base64");
-
-    return `=?UTF-8?B?${encodedSubject}?=`;
-}
-
-export function buildGmailRawMessage(draft: EmailDraft): string {
-    const to = sanitizeHeaderValue(draft.to);
-
-    const subject = encodeSubject(draft.subject);
-    // This creates an actual email-message
-    const message = [
-        `To: ${to}`,
-        `Subject: ${subject}`,
-        "MIME-Version: 1.0",
-        'Content-Type: text/plain; charset="UTF-8"',
-        "Content-Transfer-Encoding: 8bit",
-        // The blank string ehre produces the blank line separating email headers from the email body
-        "",
-        draft.body,
-    ].join("\r\n");
-    // This returns the entire thing into the form Gmail's API expects for `message.raw`
-    return Buffer
-    .from(message, "utf8")
-    .toString("base64url");
+    return message.toString("base64url");
 }

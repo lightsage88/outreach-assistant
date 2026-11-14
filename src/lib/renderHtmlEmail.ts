@@ -11,7 +11,7 @@ export function renderEmailHtml(body: string): string {
     gfm: true,
   });
   // Removes dangerous or unsupported HTML elements and attributes
-  return xss(html, {
+  const sanitizedHtml = xss(html, {
     whiteList: {
       p: [],
       br: [],
@@ -25,4 +25,6 @@ export function renderEmailHtml(body: string): string {
     stripIgnoreTag: true,
     stripIgnoreTagBody: ["script", "style"],
   });
+  console.log('sanitizedHtml', sanitizedHtml);
+  return sanitizedHtml;
 }

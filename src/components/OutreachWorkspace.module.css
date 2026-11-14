@@ -172,3 +172,23 @@
     transition: none;
   }
 }
+
+/* Formatted email preview */
+.emailPreview {
+  margin-top: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.emailPreview p {
+  margin-bottom: 12px;
+}
+
+.emailPreview a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.emailPreview a:hover {
+  text-decoration-thickness: 2px;
+}

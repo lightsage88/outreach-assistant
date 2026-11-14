@@ -8,6 +8,7 @@ import { renderTemplate } from "@/lib/renderTemplate";
 import { buildEmailDrafts } from "@/lib/buildEmailDrafts";
 import { buildEmailDraftCsv } from "@/lib/buildEmailDraftCsv";
 import { demoCampaign } from "@/lib/demoCampaign";
+import { renderEmailHtml } from "@/lib/renderHtmlEmail";
 import styles from "./OutreachWorkspace.module.css";
 
 import type { Recipient } from "@/app/types/recipient";
@@ -478,12 +479,14 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
               <p>{renderedSubject}</p>
 
               <h3>Message</h3>
-              <pre
-              // TODO: Use styled-components later
-                style={{whiteSpace: "pre-wrap"}}
-              >
-                {renderedBody}
-              </pre>
+              <div
+                className={styles.emailPreview}
+                role="region"
+                aria-label="Rendered email preview"
+                dangerouslySetInnerHTML={{
+                  __html: renderEmailHtml(renderedBody),
+                }}
+              />
             </>
           ): (
             <p>Import at least one recipient to preview the email.

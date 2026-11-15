@@ -13,7 +13,7 @@ export async function buildGmailRawMessage(draft: EmailDraft): Promise<string> {
         disableUrlAccess: true
     });
 
-    const message = await composer.compile.build();
+    const message = await composer.compile().build();
 
     return message.toString("base64url");
 }

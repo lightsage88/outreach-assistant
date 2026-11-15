@@ -25,6 +25,6 @@ export function renderEmailHtml(body: string): string {
     stripIgnoreTag: true,
     stripIgnoreTagBody: ["script", "style"],
   });
-  console.log('sanitizedHtml', sanitizedHtml);
+
   return sanitizedHtml;
 }

@@ -1,6 +1,8 @@
 import { buildGmailRawMessage } from "@/lib/buildGmailRawMessage";
 import { validateEmailDraft } from "@/lib/validateEmailDraft";
 import { prepareGmailDraftsRequestSchema } from "@/lib/schemas/emailDraftSchema";
+import { validateUploadedAttachment } from
+  "@/lib/validateUploadedAttachment";
 
 export async function POST (
     request: Request
@@ -17,8 +19,20 @@ export async function POST (
     }
 
     try {
+        const formData = await request.formData();
+        const draftsField = formData.get("drafts");
+        if (typeof draftsField !== "string") {
+            return Response.json(
+                {
+                    error: "Missing drafts field",
+                },
+                {
+                    status: 400,
+                }
+            );
+        }
         const body: unknown =
-            await request.json()
+           JSON.parse(draftsField);
 
         const parsedRequest = prepareGmailDraftsRequestSchema.safeParse(body);
 
@@ -32,6 +46,44 @@ export async function POST (
             }, {
                 status: 400,
             });
+        }
+
+        let acceptedAttachmentCount = 0;
+
+        for (const kind of ["resume", "headshot"] as const) {
+        const entries = formData.getAll(kind);
+
+        if (entries.length > 1) {
+            return Response.json(
+            { error: `Only one ${kind} is allowed.` },
+            { status: 400 }
+            );
+        }
+
+        const entry = entries[0];
+
+        if (entry === undefined) continue;
+
+        if (!(entry instanceof File)) {
+            return Response.json(
+            { error: `Invalid ${kind} attachment.` },
+            { status: 400 }
+            );
+        }
+
+        const error = await validateUploadedAttachment(
+            entry,
+            kind
+        );
+
+        if (error) {
+            return Response.json(
+            { error: `${kind}: ${error}` },
+            { status: 400 }
+            );
+        }
+
+        acceptedAttachmentCount++;
         }
 
         const { drafts } = parsedRequest.data;
@@ -59,6 +111,7 @@ export async function POST (
         return Response.json({
             count: preparedDrafts.length,
             rejectedCount: rejectedDrafts.length,
+            acceptedAttachmentCount,
             drafts: preparedDrafts,
             rejectedDrafts: rejectedDrafts.map(({ draft, validationMessages }) => ({
                 recipientId: draft.recipientId,

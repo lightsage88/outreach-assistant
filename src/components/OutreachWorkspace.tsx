@@ -228,16 +228,25 @@ const [attachmentError, setAttachmentError] = useState("");
     setGmailPreparationError("");
     setPreparedDraftCount(null);
 
-    try {
+        try {
+          const formData = new FormData();
+
+    formData.append(
+      "drafts",
+      JSON.stringify({ drafts: emailDrafts })
+    );
+
+    if (attachments.resume) {
+      formData.append("resume", attachments.resume);
+    }
+
+    if (attachments.headshot) {
+      formData.append("headshot", attachments.headshot);
+    }
       const response = await fetch("/api/gmail/prepare-drafts",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            drafts: emailDrafts,
-          }),
+          body: formData,
         }
       );
       const result = await response.json();

@@ -128,6 +128,12 @@ const [attachmentError, setAttachmentError] = useState("");
     setError("");
     setPreparedDraftCount(null);
     setGmailPreparationError("");
+    setAttachments({
+      resume: null,
+      headshot: null,
+    });
+
+    setAttachmentError("");
   }
 
   const handleAttachmentChange = (

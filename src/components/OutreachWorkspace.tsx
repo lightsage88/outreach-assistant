@@ -9,6 +9,7 @@ import { buildEmailDrafts } from "@/lib/buildEmailDrafts";
 import { buildEmailDraftCsv } from "@/lib/buildEmailDraftCsv";
 import { demoCampaign } from "@/lib/demoCampaign";
 import { renderEmailHtml } from "@/lib/renderHtmlEmail";
+import { validateAttachment, type AttachmentKind } from "@/lib/validateAttachment";
 import styles from "./OutreachWorkspace.module.css";
 
 import type { Recipient } from "@/app/types/recipient";
@@ -41,6 +42,14 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
   const [isPreparingGmailDrafts, setIsPreparingGmailDrafts] = useState(false);
   const [campaignLoaded, setCampaignLoaded] = useState(false);
   const [storageError, setStorageError] = useState("");
+  const [attachments, setAttachments] = useState<
+  Record<AttachmentKind, File | null>
+>({
+  resume: null,
+  headshot: null,
+});
+
+const [attachmentError, setAttachmentError] = useState("");
 
   useEffect(() => {
     if (mode === "demo") {
@@ -121,6 +130,22 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
     setGmailPreparationError("");
   }
 
+  const handleAttachmentChange = (
+    kind: AttachmentKind,
+    file: File | undefined
+  ) => {
+    if (!file) return;
+
+    const error = validateAttachment(file, kind);
+
+    setAttachmentError(error ?? "");
+
+    setAttachments(current => ({
+      ...current,
+      [kind]: error ? null : file,
+    }));
+  };
+
   const handleClearCampaign = () => {
     clearCampaign();
     setRecipients([]);
@@ -129,6 +154,8 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
     setSubjectTemplate("");
     setBodyTemplate("");
     setStorageError("");
+    setAttachments({ resume: null, headshot: null });
+    setAttachmentError("");
   }
 
   const handleDownloadReadyDrafts = () => {
@@ -436,6 +463,83 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
             {" "}
             <code>{"{{email}}"}</code>
           </p>
+        </section>
+        <section>
+          <h2>Attachments</h2>
+          <p>
+            Select a résumé and headshot (5 MB maximum each).
+            Files are not yet included in generated drafts.
+          </p>
+
+          <label htmlFor="resume-file">
+            Résumé (PDF)
+          </label>
+          <input
+            id="resume-file"
+            type="file"
+            accept=".pdf,application/pdf"
+            onChange={event => {
+              handleAttachmentChange(
+                "resume",
+                event.currentTarget.files?.[0]
+              );
+              event.currentTarget.value = "";
+            }}
+          />
+
+          {attachments.resume && (
+            <p>
+              Selected: {attachments.resume.name}
+              <button
+                type="button"
+                onClick={() =>
+                  setAttachments(current => ({
+                    ...current,
+                    resume: null,
+                  }))
+                }
+              >
+                Remove résumé
+              </button>
+            </p>
+          )}
+
+          <label htmlFor="headshot-file">
+            Headshot (JPG or PNG)
+          </label>
+          <input
+            id="headshot-file"
+            type="file"
+            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
+            onChange={event => {
+              handleAttachmentChange(
+                "headshot",
+                event.currentTarget.files?.[0]
+              );
+              event.currentTarget.value = "";
+            }}
+          />
+
+          {attachments.headshot && (
+            <p>
+              Selected: {attachments.headshot.name}
+              <button
+                type="button"
+                onClick={() =>
+                  setAttachments(current => ({
+                    ...current,
+                    headshot: null,
+                  }))
+                }
+              >
+                Remove headshot
+              </button>
+            </p>
+          )}
+
+          {attachmentError && (
+            <p role="alert">{attachmentError}</p>
+          )}
         </section>
         <section>
           <h2>Email Preview</h2>

@@ -483,8 +483,7 @@ const [attachmentError, setAttachmentError] = useState("");
           <h2>Attachments</h2>
           <p>
             Select a résumé and headshot (5 MB maximum each).
-            Files are not yet included in generated drafts.
-          </p>
+Selected files will be included when preparing Gmail-compatible drafts in the private workspace. In the public demo, files remain in your browser.          </p>
 
           <label htmlFor="resume-file">
             Résumé (PDF)

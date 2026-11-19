@@ -1,4 +1,4 @@
-import { buildGmailRawMessage } from "@/lib/buildGmailRawMessage";
+import { buildGmailRawMessage, type EmailAttachment } from "@/lib/buildGmailRawMessage";
 import { validateEmailDraft } from "@/lib/validateEmailDraft";
 import { prepareGmailDraftsRequestSchema } from "@/lib/schemas/emailDraftSchema";
 import { validateUploadedAttachment } from
@@ -50,6 +50,8 @@ export async function POST (
 
         let acceptedAttachmentCount = 0;
 
+        const emailAttachments: EmailAttachment[] = [];
+
         for (const kind of ["resume", "headshot"] as const) {
         const entries = formData.getAll(kind);
 
@@ -83,6 +85,12 @@ export async function POST (
             );
         }
 
+        emailAttachments.push({
+            filename: entry.name,
+            content: Buffer.from(await entry.arrayBuffer()),
+            ...(entry.type ? {contentType: entry.type} : {}),
+        });
+
         acceptedAttachmentCount++;
         }
 
@@ -104,7 +112,7 @@ export async function POST (
             .map(async ({draft}) => ({
                 recipientId: draft.recipientId,
                 to: draft.to,
-                raw: await buildGmailRawMessage(draft),
+                raw: await buildGmailRawMessage(draft, emailAttachments),
             }))
         );
 

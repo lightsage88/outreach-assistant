@@ -671,6 +671,18 @@ Selected files will be included when preparing Gmail-compatible drafts in the pr
             Export Ready Drafts
           </button>
           {mode === "private" && (
+  <button
+    type="button"
+    onClick={() => {
+      window.location.assign(
+        "/api/auth/google/start"
+      );
+    }}
+  >
+    Connect Gmail
+  </button>
+)}
+          {mode === "private" && (
           <button
             type="button"
             onClick={handlePrepareGmailDrafts}

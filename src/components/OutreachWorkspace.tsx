@@ -50,6 +50,58 @@ export default function OutreachWorkspace({ mode = "private",}: OutreachWorkspac
 });
 
 const [attachmentError, setAttachmentError] = useState("");
+const [gmailConnected, setGmailConnected] =
+  useState<boolean | null>(null);
+
+const [gmailConnectionError, setGmailConnectionError] =
+  useState("");
+
+  const [isSavingGmailDraft, setIsSavingGmailDraft] =
+  useState(false);
+
+const [savedGmailDraftId, setSavedGmailDraftId] =
+  useState<string | null>(null);
+
+const [gmailSaveError, setGmailSaveError] =
+  useState("");
+
+
+useEffect(() => {
+  if (mode !== "private") return;
+
+  const controller = new AbortController();
+
+  async function checkGmailConnection() {
+    try {
+      const response = await fetch("/api/gmail/status", {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error("Unable to check Gmail connection.");
+      }
+
+      const result: { connected: boolean } =
+        await response.json();
+
+      if (!controller.signal.aborted) {
+        setGmailConnected(result.connected);
+      }
+    } catch {
+      if (!controller.signal.aborted) {
+        setGmailConnectionError(
+          "Unable to check Gmail connection."
+        );
+      }
+    }
+  }
+
+  void checkGmailConnection();
+
+  return () => controller.abort();
+}, [mode]);
+
 
   useEffect(() => {
     if (mode === "demo") {
@@ -135,6 +187,30 @@ const [attachmentError, setAttachmentError] = useState("");
 
     setAttachmentError("");
   }
+
+
+const handleDisconnectGmail = async () => {
+  setGmailConnectionError("");
+
+  try {
+    const response = await fetch("/api/gmail/status", {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error("Unable to disconnect Gmail.");
+    }
+
+    setGmailConnected(false);
+  } catch (error) {
+    setGmailConnectionError(
+      error instanceof Error
+        ? error.message
+        : "Unable to disconnect Gmail."
+    );
+  }
+};
+
 
   const handleAttachmentChange = (
     kind: AttachmentKind,
@@ -266,6 +342,109 @@ const [attachmentError, setAttachmentError] = useState("");
       setIsPreparingGmailDrafts(false);
     }
   }
+
+
+const handleSaveSelectedDraft = async () => {
+  const selectedDraft = emailDrafts.find(
+    draft => draft.recipientId === previewRecipient?.id
+  );
+
+  if (!selectedDraft?.isReady) {
+    setGmailSaveError(
+      "Select a recipient with a valid email draft."
+    );
+    return;
+  }
+
+  // Saving is an intentional, user-confirmed action.
+  if (
+    !window.confirm(
+      `Save a Gmail draft addressed to ${selectedDraft.to}? ` +
+      "No email will be sent."
+    )
+  ) {
+    return;
+  }
+
+  setIsSavingGmailDraft(true);
+  setGmailSaveError("");
+  setSavedGmailDraftId(null);
+
+  try {
+    // First, use our existing validated MIME pipeline.
+    // Only prepare ONE selected draft.
+    const formData = new FormData();
+
+    formData.append(
+      "drafts",
+      JSON.stringify({ drafts: [selectedDraft] })
+    );
+
+    if (attachments.resume) {
+      formData.append("resume", attachments.resume);
+    }
+
+    if (attachments.headshot) {
+      formData.append("headshot", attachments.headshot);
+    }
+
+    const preparationResponse = await fetch(
+      "/api/gmail/prepare-drafts",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+
+    const prepared = await preparationResponse.json();
+
+    if (!preparationResponse.ok) {
+      throw new Error(
+        prepared.error ?? "Unable to prepare the email."
+      );
+    }
+
+    const raw: unknown = prepared.drafts?.[0]?.raw;
+
+    if (
+      prepared.count !== 1 ||
+      typeof raw !== "string"
+    ) {
+      throw new Error("No valid email was prepared.");
+    }
+
+    // Now save that MIME message into Gmail Drafts.
+    const saveResponse = await fetch(
+      "/api/gmail/create-draft",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ raw }),
+      }
+    );
+
+    const result = await saveResponse.json();
+
+    if (!saveResponse.ok) {
+      throw new Error(
+        result.error ?? "Unable to save Gmail draft."
+      );
+    }
+
+    setSavedGmailDraftId(result.id);
+  } catch (error) {
+    setGmailSaveError(
+      error instanceof Error
+        ? error.message
+        : "Unable to save Gmail draft."
+    );
+  } finally {
+    setIsSavingGmailDraft(false);
+  }
+};
+
   
 
   // Validation of recipients is done after parsing so we can still display them in the UI
@@ -671,17 +850,40 @@ Selected files will be included when preparing Gmail-compatible drafts in the pr
             Export Ready Drafts
           </button>
           {mode === "private" && (
-  <button
-    type="button"
-    onClick={() => {
-      window.location.assign(
-        "/api/auth/google/start"
-      );
-    }}
-  >
-    Connect Gmail
-  </button>
-)}
+            <div>
+              <p role="status">
+                Gmail:{" "}
+                {gmailConnected === null
+                  ? "Checking connection..."
+                  : gmailConnected
+                    ? "Connected (local session)"
+                    : "Not connected"}
+              </p>
+
+              {gmailConnected ? (
+                <button
+                  type="button"
+                  onClick={handleDisconnectGmail}
+                >
+                  Disconnect Gmail Locally
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.location.assign(
+                      "/api/auth/google/start"
+                    );
+                  }}
+                >
+                  Connect Gmail
+                </button>
+              )}
+              {gmailConnectionError && (
+                <p role="alert">{gmailConnectionError}</p>
+              )}
+            </div>
+          )}
           {mode === "private" && (
           <button
             type="button"
@@ -691,6 +893,45 @@ Selected files will be included when preparing Gmail-compatible drafts in the pr
             {isPreparingGmailDrafts ? "Preparing Gmail Drafts..." : "Prepare Gmail Drafts"}
           </button>
           )}
+
+{mode === "private" && (
+  <div>
+    <button
+      type="button"
+      onClick={handleSaveSelectedDraft}
+      disabled={
+        isSavingGmailDraft ||
+        !emailDrafts.some(
+          draft =>
+            draft.recipientId === previewRecipient?.id &&
+            draft.isReady
+        )
+      }
+    >
+      {isSavingGmailDraft
+        ? "Saving to Gmail..."
+        : "Save Previewed Draft to Gmail"}
+    </button>
+
+    {savedGmailDraftId && (
+      <p role="status">
+        Draft successfully saved to Gmail!{" "}
+        <a
+          href="https://mail.google.com/mail/#drafts"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Open Gmail Drafts
+        </a>
+      </p>
+    )}
+
+    {gmailSaveError && (
+      <p role="alert">{gmailSaveError}</p>
+    )}
+  </div>
+)}
+
           {preparedDraftCount !== null && (
             <p>
               Prepared {preparedDraftCount}{" "}
